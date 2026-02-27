@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Hs4all</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <h1 class="login-title">Hs4all Admin</h1>
+            <p class="login-subtitle">Gestão de projetos e conteúdos</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="password">Palavra-passe</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">Entrar</button>
+            </form>
+            <div class="login-error" id="loginError" style="display: none;">
+                Palavra-passe incorreta
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-container" id="adminContainer" style="display: none;">
+        <header class="admin-header">
+            <h1>Administração Hs4all</h1>
+            <button class="logout-btn" id="logoutBtn">Sair</button>
+        </header>
+
+        <main class="admin-main">
+            <!-- Navigation Tabs -->
+            <nav class="admin-tabs">
+                <button class="tab-btn active" data-target="tab-visuals">Visuais fixos</button>
+                <button class="tab-btn" data-target="tab-projects">Gestão de Projetos</button>
+                <button class="tab-btn" data-target="tab-texts">Textos do Site</button>
+            </nav>
+
+            <!-- Fixed Visuals Management -->
+            <section class="admin-section tab-content active" id="tab-visuals">
+                <h2>Visuais fixos do site</h2>
+                <div class="fixed-visuals-list" id="fixedVisualsList">
+                    <!-- Loaded by JS -->
+                </div>
+            </section>
+
+            <!-- Projects Management -->
+            <section class="admin-section tab-content" id="tab-projects">
+                <h2>Gestão de Projetos</h2>
+                <button class="add-btn" id="addProjectBtn">+ Adicionar projeto</button>
+                <div class="projects-list" id="projectsList">
+                    <!-- Loaded by JS -->
+                </div>
+            </section>
+
+            <!-- Text/Translation Management -->
+            <section class="admin-section tab-content" id="tab-texts">
+                <h2>Textos do Site</h2>
+                <div class="texts-list" id="textsList">
+                    <!-- Text blocks will be loaded here by JS -->
+                </div>
+            </section>
+    </div>
+    </section>
+    </main>
+    </div>
+
+    <!-- Project Modal -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Adicionar projeto</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="projectForm">
+                    <div class="form-group">
+                        <label>Imagem 1 (Exterior)</label>
+                        <input type="file" id="projectExtImg" name="extImg" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Som 1 (Exterior)</label>
+                        <input type="file" id="projectExtSound" name="extSound" accept="audio/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Imagem 2 (Interior)</label>
+                        <input type="file" id="projectIntImg" name="intImg" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Som 2 (Interior)</label>
+                        <input type="file" id="projectIntSound" name="intSound" accept="audio/*">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Guardar</button>
+                        <button type="button" class="cancel-btn" id="modalCancel">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/storage.js?v=89"></script>
+    <script src="js/translations.js"></script>
+    <script defer src="js/admin.js"></script>
+</body>
+
+</html>

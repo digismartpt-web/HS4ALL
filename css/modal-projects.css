@@ -1,0 +1,442 @@
+/* ============================================
+   Projects Modal - Additional Projects
+   ============================================ */
+.projects-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+}
+
+.projects-modal.active {
+    display: flex;
+}
+
+.projects-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.projects-modal-content {
+    position: relative;
+    background: var(--color-off-white);
+    border-radius: 12px;
+    padding: var(--space-2xl);
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.projects-modal-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    width: 44px;
+    height: 44px;
+    background: var(--color-white);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.projects-modal-close:hover {
+    transform: scale(1.1);
+    background: var(--color-charcoal);
+    color: var(--color-white);
+}
+
+.projects-modal-close svg {
+    width: 20px;
+    height: 20px;
+}
+
+.projects-modal-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+    text-align: center;
+    margin-bottom: var(--space-xl);
+    color: var(--color-charcoal);
+}
+
+.projects-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-lg);
+}
+
+.projects-modal-grid .project-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.projects-modal-grid .project-preview {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+}
+
+.projects-modal-grid .project-img-ext,
+.projects-modal-grid .project-img-int {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.projects-modal-grid .project-img-int {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    transform: scale(1.1);
+}
+
+.projects-modal-grid .project-card.active .project-img-ext {
+    transform: translateY(-100%);
+}
+
+.projects-modal-grid .project-card.active .project-img-int {
+    transform: scale(1);
+}
+
+.projects-modal-grid .project-int-thumb {
+    bottom: 70px;
+}
+
+.projects-modal-grid .project-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-md);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+    color: var(--color-white);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+.projects-modal-grid .project-card:hover .project-info,
+.projects-modal-grid .project-card.active .project-info {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.projects-modal-grid .project-title {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-xs);
+}
+
+.projects-modal-grid .project-location {
+    font-size: var(--text-sm);
+    opacity: 0.9;
+}
+
+.projects-modal-grid .project-specs {
+    font-size: var(--text-xs);
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .projects-modal-content {
+        padding: var(--space-lg);
+        max-height: 95vh;
+    }
+
+    .projects-modal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   Project Expand Arrow Button (on each card)
+   ============================================ */
+.project-expand-arrow {
+    position: absolute;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    width: 36px;
+    height: 36px;
+    background: var(--color-white);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0;
+}
+
+.project-expand-arrow:hover {
+    transform: scale(1.1);
+    background: var(--color-charcoal);
+    color: var(--color-white);
+}
+
+.project-expand-arrow svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ============================================
+   Project Fullscreen View with all features
+   ============================================ */
+.project-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-fullscreen.open {
+    display: flex;
+}
+
+.project-fullscreen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.project-fullscreen.open .project-fullscreen-overlay {
+    opacity: 1;
+    pointer-events: none;
+}
+
+.project-fullscreen-close {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    width: 60px;
+    height: 60px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+}
+
+.project-fullscreen-close:hover {
+    transform: scale(1.1);
+    background: #333;
+    color: white;
+}
+
+.project-fullscreen-close svg {
+    width: 28px;
+    height: 28px;
+}
+
+.project-fullscreen-content {
+    position: relative;
+    z-index: 10;
+    width: 80vw;
+    height: 80vh;
+}
+
+.project-fullscreen-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #000;
+    box-sizing: border-box;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+}
+
+.project-fullscreen-preview>* {
+    position: absolute;
+}
+
+.project-fullscreen-ext {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+.project-fullscreen-int {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.1);
+    opacity: 0;
+    transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.5s ease;
+    z-index: 2;
+}
+
+.project-fullscreen.revealed .project-fullscreen-ext {
+    transform: translateY(-100%);
+}
+
+.project-fullscreen.revealed .project-fullscreen-int {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.project-fullscreen-thumb {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 15%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 3px solid white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    z-index: 300;
+    pointer-events: auto !important;
+}
+
+.project-fullscreen-thumb:hover {
+    transform: scale(1.1);
+}
+
+.project-fullscreen .reveal-toggle {
+    position: absolute;
+    bottom: 40px;
+    left: calc(15% + 60px);
+    z-index: 300 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    font-size: 13px !important;
+    padding: 14px 24px !important;
+    min-height: 48px !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 30px !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    transition: background 0.2s ease, transform 0.2s ease !important;
+}
+
+.project-fullscreen .reveal-toggle:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #111 !important;
+    transform: scale(1.04) !important;
+}
+
+@media (max-width: 768px) {
+    .project-fullscreen .reveal-toggle {
+        bottom: 24px;
+        left: 24px;
+    }
+}
+
+/* Hide the reveal button once interior is revealed */
+.project-fullscreen.revealed .reveal-toggle {
+    display: none !important;
+}
+
+.project-fullscreen .image-sound-toggle {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    width: 50px;
+    height: 50px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    z-index: 300 !important;
+    pointer-events: auto !important;
+}
+
+.projects-modal-grid .image-sound-toggle {
+    z-index: 100 !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    cursor: pointer !important;
+    position: absolute !important;
+    top: var(--space-sm) !important;
+    right: var(--space-sm) !important;
+}
+
+.projects-modal-grid .image-sound-toggle .sound-icon.sound-off {
+    display: block;
+}
+
+.projects-modal-grid .image-sound-toggle .sound-icon.sound-on {
+    display: none;
+}
+
+.projects-modal-grid .image-sound-toggle.active .sound-icon.sound-off {
+    display: none !important;
+}
+
+.projects-modal-grid .image-sound-toggle.active .sound-icon.sound-on {
+    display: block !important;
+}
+
+.projects-modal-grid .reveal-toggle {
+    z-index: 50 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
