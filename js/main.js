@@ -427,7 +427,11 @@ function initSoundSystem() {
     // Scroll Detection for Audio
     const handleScrollSounds = throttle(() => {
         if (!soundManager.enabled || soundManager.hoverLocked) {
-            console.log('Scroll sounds skipped (disabled or hover locked)');
+            return;
+        }
+
+        // Do not trigger ambient scroll sounds if a manual sound toggle or voice-over is active
+        if (document.querySelector('.image-sound-toggle.active') || window.speechSynthesis.speaking) {
             return;
         }
 
@@ -435,15 +439,33 @@ function initSoundSystem() {
         const center = window.scrollY + (window.innerHeight / 2); // Center of viewport
 
         let activeSound = null;
+        let priorityFound = false;
 
         // Check which trigger is currently "focused"
         triggers.forEach(trigger => {
+            if (priorityFound) return;
+
             const rect = trigger.getBoundingClientRect();
             const absoluteTop = rect.top + window.scrollY;
             const absoluteBottom = rect.bottom + window.scrollY;
 
             if (center >= absoluteTop && center <= absoluteBottom) {
-                activeSound = trigger.getAttribute('data-sound');
+                const soundId = trigger.getAttribute('data-sound');
+                if (!soundId) return;
+
+                // If it's a comparison card, prioritize the .active one
+                const card = trigger.closest('.comparison-card');
+                if (card) {
+                    if (card.classList.contains('active')) {
+                        activeSound = soundId;
+                        priorityFound = true;
+                    } else if (!activeSound) {
+                        activeSound = soundId; // First card wins by default
+                    }
+                } else {
+                    activeSound = soundId;
+                    priorityFound = true; // Regular triggers always win
+                }
             }
         });
 
@@ -719,6 +741,9 @@ function initVoiceOver() {
             if (window.simpleSoundManager) {
                 window.simpleSoundManager.stopAll();
             }
+            if (window.soundManager) {
+                window.soundManager.stopAll();
+            }
             document.querySelectorAll('.image-sound-toggle.active').forEach(t => t.classList.remove('active'));
 
             const voiceSection = trigger.getAttribute('data-voice-section');
@@ -808,7 +833,7 @@ function initAllSoundToggles() {
                 this.classList.remove('active');
                 window.simpleSoundManager?.pause(soundId);
             } else {
-                // Stop all other sounds
+                // Stop all other sounds in SimpleSoundManager
                 allToggles.forEach(t => {
                     if (t !== this) {
                         t.classList.remove('active');
@@ -818,6 +843,11 @@ function initAllSoundToggles() {
                         }
                     }
                 });
+
+                // STOP main sound manager (SoundSystem) ambient sounds to avoid overlap
+                if (window.soundManager) {
+                    window.soundManager.stopAll();
+                }
 
                 this.classList.add('active');
                 window.simpleSoundManager?.play(soundId, targetVol);
@@ -838,14 +868,22 @@ function initAllSoundToggles() {
                 const card = revealBtn.closest('.project-card');
                 if (!card) return;
                 const soundToggle = card.querySelector('.image-sound-toggle');
-                if (window.simpleSoundManager) window.simpleSoundManager.stopAll();
+
+                // Track if sound was playing to switch it seamlessly
+                const wasPlaying = soundToggle && soundToggle.classList.contains('active');
+                const oldSound = soundToggle ? soundToggle.getAttribute('data-sound') : null;
+
                 if (soundToggle) {
-                    soundToggle.classList.remove('active');
                     // Switch to interior sound
                     const soundInt = card.getAttribute('data-sound-int');
-                    if (soundInt) {
+                    if (soundInt && soundInt !== oldSound) {
                         soundToggle.setAttribute('data-sound', soundInt);
                         card.setAttribute('data-sound', soundInt);
+
+                        if (wasPlaying && window.simpleSoundManager) {
+                            window.simpleSoundManager.stop(oldSound);
+                            window.simpleSoundManager.play(soundInt);
+                        }
                     }
                 }
                 card.classList.add('active'); // always open, never close with this button
@@ -858,15 +896,23 @@ function initAllSoundToggles() {
                 e.stopPropagation();
                 const card = thumb.closest('.project-card');
                 if (!card) return;
+
+                // If it's NOT active, we are opening it (so it will become interior)
+                // If it IS active, we are closing it (so it will become exterior)
+                const isOpening = !card.classList.contains('active');
+                const nextSound = isOpening ? card.getAttribute('data-sound-int') : card.getAttribute('data-sound-ext');
+
                 const soundToggle = card.querySelector('.image-sound-toggle');
-                if (window.simpleSoundManager) window.simpleSoundManager.stopAll();
-                if (soundToggle) {
-                    soundToggle.classList.remove('active');
-                    // Toggling back to exterior view
-                    const soundExt = card.getAttribute('data-sound-ext');
-                    if (soundExt) {
-                        soundToggle.setAttribute('data-sound', soundExt);
-                        card.setAttribute('data-sound', soundExt);
+                const wasPlaying = soundToggle && soundToggle.classList.contains('active');
+                const oldSound = soundToggle ? soundToggle.getAttribute('data-sound') : null;
+
+                if (soundToggle && nextSound && nextSound !== oldSound) {
+                    soundToggle.setAttribute('data-sound', nextSound);
+                    card.setAttribute('data-sound', nextSound);
+
+                    if (wasPlaying && window.simpleSoundManager) {
+                        window.simpleSoundManager.stop(oldSound);
+                        window.simpleSoundManager.play(nextSound);
                     }
                 }
                 card.classList.toggle('active');
@@ -880,14 +926,21 @@ function initAllSoundToggles() {
                 const card = extImg.closest('.project-card');
                 if (!card) return;
                 const soundToggle = card.querySelector('.image-sound-toggle');
-                if (window.simpleSoundManager) window.simpleSoundManager.stopAll();
+
+                const wasPlaying = soundToggle && soundToggle.classList.contains('active');
+                const oldSound = soundToggle ? soundToggle.getAttribute('data-sound') : null;
+
                 if (soundToggle) {
-                    soundToggle.classList.remove('active');
                     // Switch to interior sound upon immersion
                     const soundInt = card.getAttribute('data-sound-int');
-                    if (soundInt) {
+                    if (soundInt && soundInt !== oldSound) {
                         soundToggle.setAttribute('data-sound', soundInt);
                         card.setAttribute('data-sound', soundInt);
+
+                        if (wasPlaying && window.simpleSoundManager) {
+                            window.simpleSoundManager.stop(oldSound);
+                            window.simpleSoundManager.play(soundInt);
+                        }
                     }
                 }
                 card.classList.add('active'); // click on exterior photo → enter immersion
@@ -936,15 +989,34 @@ function initProjectCloseButtons() {
 
             if (revealBtn || thumb) {
                 e.stopPropagation();
-                // Stop all sounds when revealing interior
-                if (window.simpleSoundManager) {
-                    window.simpleSoundManager.stopAll();
-                }
                 const soundBtnEl = document.getElementById('fullscreenSoundBtn');
-                if (soundBtnEl) soundBtnEl.classList.remove('active');
+
+                const wasPlaying = soundBtnEl && soundBtnEl.classList.contains('active');
+                const oldSound = soundBtnEl ? soundBtnEl.getAttribute('data-sound') : null;
+
+                if (soundBtnEl) {
+                    let nextSound = "";
+                    // If currently NOT revealed, we are moving TO interior
+                    if (!fullscreen.classList.contains('revealed')) {
+                        nextSound = fullscreen.getAttribute('data-sound-int');
+                    } else {
+                        // Moving back to exterior
+                        nextSound = fullscreen.getAttribute('data-sound-ext');
+                    }
+
+                    if (nextSound && nextSound !== oldSound) {
+                        soundBtnEl.setAttribute('data-sound', nextSound);
+
+                        if (wasPlaying && window.simpleSoundManager) {
+                            window.simpleSoundManager.stop(oldSound);
+                            window.simpleSoundManager.play(nextSound);
+                        }
+                    }
+                }
                 // Toggle the revealed state (CSS handles the animation)
                 fullscreen.classList.toggle('revealed');
-            } else if (!soundBtn && !closeBtn && !content) {
+            }
+            else if (!soundBtn && !closeBtn && !content) {
                 // Clicked on the dark background (outside content) — close and stop sounds
                 fullscreen.classList.remove('open');
                 fullscreen.classList.remove('revealed');
@@ -1068,7 +1140,7 @@ function initFullscreenView(modal) {
                 if (intImg && intImg.src) {
                     fullscreenIntImg.src = intImg.src;
                 } else {
-                    fullscreenIntImg.src = 'assets/images/1.jpeg';
+                    fullscreenIntImg.src = ''; // Remove hardcoded fallback
                 }
             }
             if (fullscreenThumb) {
@@ -1076,20 +1148,21 @@ function initFullscreenView(modal) {
                     fullscreenThumb.src = thumbImg.src;
                 } else if (intImg && intImg.src) {
                     fullscreenThumb.src = intImg.src;
-                } else if (extImg && extImg.src) {
-                    fullscreenThumb.src = extImg.src;
                 } else {
-                    fullscreenThumb.src = 'assets/images/1.jpeg';
+                    fullscreenThumb.src = ''; // Remove hardcoded fallback
                 }
             }
 
-            currentSoundId = card.getAttribute('data-sound');
+            const sExt = card.getAttribute('data-sound-ext') || card.getAttribute('data-sound');
+            const sInt = card.getAttribute('data-sound-int');
+
+            fullscreen.setAttribute('data-sound-ext', sExt || '');
+            fullscreen.setAttribute('data-sound-int', sInt || '');
+
             const fullscreenSoundBtn = document.getElementById('fullscreenSoundBtn');
             if (fullscreenSoundBtn) {
-                fullscreenSoundBtn.setAttribute('data-sound', currentSoundId || '');
+                fullscreenSoundBtn.setAttribute('data-sound', sExt || '');
                 fullscreenSoundBtn.classList.remove('active');
-
-                // Allow the button to be rebound or triggered correctly with new sound
                 delete fullscreenSoundBtn.dataset.bound;
             }
 

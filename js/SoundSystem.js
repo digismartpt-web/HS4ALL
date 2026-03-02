@@ -43,9 +43,12 @@ class SoundManager {
             'birds_2': 'assets/audio/birds_2.mp3',
             'birds_3': 'assets/audio/birds_3.mp3',
             'forest': 'assets/audio/nature_forest.mp3',
-            'ocean': 'assets/audio/ocean_waves.mp3',
-            'waterfall': 'assets/audio/waterfall.mp3',
-            'rain': 'assets/audio/rain_roof.mp3',
+            'rain_ext': 'assets/audio/rain_roof.mp3',
+            'rain_int': 'assets/audio/rain_roof.mp3',
+            'ocean_ext': 'assets/audio/ocean_waves.mp3',
+            'ocean_int': 'assets/audio/ocean_waves.mp3',
+            'waterfall_ext': 'assets/audio/waterfall.mp3',
+            'waterfall_int': 'assets/audio/waterfall.mp3',
             'frogs_lake': 'assets/audio/frogs_lake.mp3',
             'countryside_hero': 'assets/audio/countryside_hero.mp3',
             'typewriter': 'assets/audio/typewriter.mp3',
@@ -57,13 +60,17 @@ class SoundManager {
         };
 
         for (const [key, src] of Object.entries(assets)) {
-            const audio = new Audio(src);
-            audio.loop = true;
-            audio.volume = 0;
-            // Mark as valid only if it loads (simple check)
-            audio.addEventListener('canplaythrough', () => { audio.dataset.valid = 'true'; });
-            audio.addEventListener('error', () => { audio.dataset.valid = 'false'; });
-            this.sounds[key] = audio;
+            // ONLY create default if no custom audio was injected for this key
+            // This prevents the init() from wiping out administrator-configured audio
+            if (!this.sounds[key] || this.sounds[key].dataset.valid !== 'true') {
+                const audio = new Audio(src);
+                audio.loop = true;
+                audio.volume = 0;
+                // Mark as valid only if it loads (simple check)
+                audio.addEventListener('canplaythrough', () => { audio.dataset.valid = 'true'; });
+                audio.addEventListener('error', () => { audio.dataset.valid = 'false'; });
+                this.sounds[key] = audio;
+            }
         }
 
         // Specific volume boosts
@@ -131,12 +138,29 @@ class SoundManager {
     // --- Dynamic Audio Injection ---
 
     injectCustomAudio(soundId, src) {
+        if (!src) return;
         console.log(`Injecting custom audio for SoundManager: ${soundId}`);
+
+        // If this sound is currently playing, stop the old instance first
+        if (this.currentSoundId === soundId) {
+            this.fadeOut(soundId);
+            // We'll restart it below after the new object is ready
+        }
+
         const audio = new Audio(src);
         audio.loop = true;
         audio.volume = 0;
         audio.dataset.valid = 'true'; // Force valid so fading uses file not procedural fallback
+        audio.load(); // Ensure it starts loading immediately
+
         this.sounds[soundId] = audio;
+
+        // If it was the current sound, restart the fade with the new source
+        if (this.currentSoundId === soundId) {
+            setTimeout(() => {
+                this.fadeIn(soundId);
+            }, 100);
+        }
     }
 
     // --- Core Fading Logic (Hybrid) ---
@@ -150,13 +174,12 @@ class SoundManager {
             'birds_2': 'birds',
             'birds_3': 'birds',
             'forest': 'forest',
-            'ocean': 'seaside',
-            'waterfall': 'waterfall',
-            'rain': 'rain',
-            'wind_birds': 'forest',
-            'snowstorm': 'snowstorm',
-            'frogs_lake': 'frogs',
-            'frogs': 'frogs',
+            'rain_ext': 'rain',
+            'rain_int': 'rain',
+            'ocean_ext': 'seaside',
+            'ocean_int': 'seaside',
+            'waterfall_ext': 'waterfall',
+            'waterfall_int': 'waterfall',
             'interior_snow': 'forest',
             'interior_rain': 'rain',
             'interior_seaside': 'seaside',

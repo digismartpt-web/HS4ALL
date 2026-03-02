@@ -12,11 +12,12 @@ class SimpleSoundManager {
         // Default sounds — only add if not already injected by dynamic-content.js
         // This prevents overwriting custom admin-uploaded audio with default files
         const soundFiles = {
-            'countryside_hero': 'assets/audio/countryside_hero.mp3',
-            'music': 'assets/audio/music_gentle.mp3',
-            'rain': 'assets/audio/rain_roof.mp3',
-            'ocean': 'assets/audio/ocean_waves.mp3',
-            'waterfall': 'assets/audio/waterfall.mp3',
+            'rain_ext': 'assets/audio/rain_roof.mp3',
+            'rain_int': 'assets/audio/rain_roof.mp3',
+            'ocean_ext': 'assets/audio/ocean_waves.mp3',
+            'ocean_int': 'assets/audio/ocean_waves.mp3',
+            'waterfall_ext': 'assets/audio/waterfall.mp3',
+            'waterfall_int': 'assets/audio/waterfall.mp3',
             'frogs_lake': 'assets/audio/frogs_lake.mp3',
             'birds': 'assets/audio/birds_1.mp3'
         };
@@ -74,24 +75,13 @@ class SimpleSoundManager {
     recreateAndPlay(soundId, volume) {
         let srcToPlay = null;
 
-        // Check if we already have this sound with a src we can reuse
+        // Use the current cached source if it exists
         if (this.sounds[soundId] && this.sounds[soundId].src) {
             srcToPlay = this.sounds[soundId].src;
-        } else {
-            // Fallbacks for default hardcoded sounds if not dynamically loaded
-            const soundFiles = {
-                'countryside_hero': 'assets/audio/countryside_hero.mp3',
-                'music': 'assets/audio/music_gentle.mp3',
-                'rain': 'assets/audio/rain_roof.mp3',
-                'ocean': 'assets/audio/ocean_waves.mp3',
-                'waterfall': 'assets/audio/waterfall.mp3',
-                'frogs_lake': 'assets/audio/frogs_lake.mp3',
-                'birds': 'assets/audio/birds_1.mp3'
-            };
-            srcToPlay = soundFiles[soundId];
         }
 
         if (srcToPlay) {
+            console.log(`SimpleSoundManager: Recreating audio for ${soundId} using current source.`);
             const audio = new Audio(srcToPlay);
             audio.loop = true;
             audio.volume = volume;
@@ -101,6 +91,8 @@ class SimpleSoundManager {
             }).catch(e => {
                 console.error('Failed to play recreated audio:', e);
             });
+        } else {
+            console.warn(`SimpleSoundManager: Cannot recreate ${soundId}, no source found.`);
         }
     }
 
@@ -146,7 +138,7 @@ window.updateSimpleSoundManager = function (soundId, src) {
     // If already exists, update the source and reload
     if (window.simpleSoundManager.sounds[soundId]) {
         const audio = window.simpleSoundManager.sounds[soundId];
-        
+
         // Stop it if currently playing before replacing
         if (window.simpleSoundManager.currentSound === soundId) {
             window.simpleSoundManager.stop(soundId);

@@ -142,13 +142,30 @@ async function loadFixedVisuals() {
  */
 function injectSoundDirect(soundId, soundSrc) {
     if (!soundSrc) return;
+    const isBase64 = soundSrc.startsWith('data:');
+
     const doInject = () => {
+        let injected = false;
+
+        // 1. SIMPLE SOUND MANAGER INJECTION
         if (window.simpleSoundManager && window.updateSimpleSoundManager) {
             window.updateSimpleSoundManager(soundId, soundSrc);
-            return true;
+            injected = true;
         }
-        return false;
+
+        // 2. MAIN SOUND MANAGER INJECTION (SoundSystem.js)
+        if (window.soundManager && window.soundManager.injectCustomAudio) {
+            // Avoid overwriting valid large assets if just setting a small fallback
+            const currentAudioValid = window.soundManager.sounds[soundId]?.dataset?.valid;
+            if (!(currentAudioValid === 'true' && !isBase64)) {
+                window.soundManager.injectCustomAudio(soundId, soundSrc);
+            }
+            injected = true;
+        }
+
+        return injected;
     };
+
     if (!doInject()) {
         let attempts = 0;
         const poll = setInterval(() => {
@@ -163,14 +180,33 @@ function injectSoundDirect(soundId, soundSrc) {
  */
 function applyDynamicImages() {
     const images = document.querySelectorAll('.dynamic-img');
+    const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
     images.forEach(img => {
+        if (img.dataset.prio === '1') return; // Skip if already handled by Priority Loader
+
         const imgSrc = img.getAttribute('data-src');
-        if (imgSrc && !img.src.includes(imgSrc)) {
+        const currentSrc = img.src || '';
+
+        // We consider it a placeholder if it's empty, a hash/slash, the current URL, or our transparent GIF
+        const isPlaceholder = !currentSrc ||
+            currentSrc.endsWith('/') ||
+            currentSrc.endsWith('#') ||
+            currentSrc === window.location.href ||
+            currentSrc === transparentGif;
+
+        if (imgSrc && isPlaceholder) {
             img.src = imgSrc;
         }
 
-        // Show immediately if already has a src (applied by updateImgAndSound)
-        if (img.src && !img.src.endsWith('#') && !img.src.endsWith('/')) {
+        // Handle visibility for images that now have a valid non-placeholder src
+        const hasValidSrc = img.src &&
+            !img.src.endsWith('#') &&
+            !img.src.endsWith('/') &&
+            img.src !== window.location.href &&
+            img.src !== transparentGif;
+
+        if (hasValidSrc) {
             if (img.complete) {
                 img.style.opacity = '1';
                 img.style.transition = 'opacity 0.4s ease-in-out';
@@ -188,6 +224,12 @@ function updateImgAndSound(imgSelector, imgSrc, soundSelector, soundSrc, isCompa
     const imgEls = document.querySelectorAll(imgSelector);
     imgEls.forEach(imgEl => {
         if (imgEl) {
+            // Priority check: if already handled by Priority Loader, don't reset opacity or fade
+            if (imgEl.dataset.prio === '1') {
+                console.log(`[dynamic-content] Skipping reset for prioritized image: ${imgSelector}`);
+                return;
+            }
+
             const finalSrc = imgSrc || imgEl.getAttribute('data-src');
             if (finalSrc) {
                 imgEl.src = finalSrc;

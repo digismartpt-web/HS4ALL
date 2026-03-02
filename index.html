@@ -28,30 +28,52 @@
                 const logoData = localStorage.getItem('hs4all_logo_img');
                 const visualsRaw = localStorage.getItem('hs4all_fixed_visuals');
                 const visuals = visualsRaw ? JSON.parse(visualsRaw) : null;
-                const ids = ['navLogoImg', 'footerLogoImg', 'heroImgExt', 'philoImg'];
-                let loaded = 0;
+                const isCustom = (s) => s && s.startsWith('data:image');
 
                 const poll = setInterval(() => {
                     const nl = document.getElementById('navLogoImg'), fl = document.getElementById('footerLogoImg');
-                    const hi = document.getElementById('heroImgExt'), pi = document.getElementById('philoImg');
 
-                    if (logoData) {
-                        if (nl && !nl.dataset.prio) { nl.src = logoData; nl.style.display = 'block'; nl.dataset.prio = '1'; const nt = document.getElementById('navLogoText'); if (nt) nt.style.display = 'none'; loaded++; }
-                        if (fl && !fl.dataset.prio) { fl.src = logoData; fl.style.display = 'block'; fl.dataset.prio = '1'; const ft = document.getElementById('footerLogoText'); if (ft) ft.style.display = 'none'; loaded++; }
-                    } else { if (nl && !nl.dataset.prio) loaded++; if (fl && !fl.dataset.prio) loaded++; }
+                    // 1. Handle Logos
+                    if (logoData && isCustom(logoData)) {
+                        if (nl && !nl.dataset.prio) { nl.src = logoData; nl.style.display = 'block'; nl.dataset.prio = '1'; const nt = document.getElementById('navLogoText'); if (nt) nt.style.display = 'none'; }
+                        if (fl && !fl.dataset.prio) { fl.src = logoData; fl.style.display = 'block'; fl.dataset.prio = '1'; const ft = document.getElementById('footerLogoText'); if (ft) ft.style.display = 'none'; }
+                    }
 
-                    if (visuals) {
-                        const h = visuals.find(v => v.id === 'hero'), p = visuals.find(v => v.id === 'philosophy');
-                        if (h && hi && !hi.dataset.prio) { hi.src = h.img; hi.style.opacity = '1'; hi.dataset.prio = '1'; loaded++; }
-                        else if (!h && hi && !hi.dataset.prio) loaded++;
+                    // 2. Handle Fixed Visuals (Philosophy, Comfort, etc.)
+                    if (visuals && Array.isArray(visuals)) {
+                        const allDynamic = document.querySelectorAll('.dynamic-img[data-image-id]');
+                        allDynamic.forEach(img => {
+                            if (img.dataset.prio) return;
+                            const imgId = img.getAttribute('data-image-id');
+                            // Map Visual IDs (from admin) to Image IDs (in HTML)
+                            const mapping = {
+                                'hero': ['Image-Ext-01', 'Image-Int-01'],
+                                'philosophy': ['philosophy'],
+                                'comfort_ext': ['Image-Ext-02'],
+                                'comfort_int': ['Image-Int-02'],
+                                'seaside_ext': ['Image-Ext-03'],
+                                'seaside_int': ['Image-Int-03'],
+                                'waterfall_ext': ['Image-Ext-04'],
+                                'waterfall_int': ['Image-Int-05'],
+                                'concept': ['Image-Ext-04'],
+                                'process': ['Image-Ext-04']
+                            };
 
-                        if (p && pi && !pi.dataset.prio) { pi.src = p.img; pi.style.opacity = '1'; pi.dataset.prio = '1'; loaded++; }
-                        else if (!p && pi && !pi.dataset.prio) loaded++;
-                    } else { if (hi && !hi.dataset.prio) loaded++; if (pi && !pi.dataset.prio) loaded++; }
-
-                    if (loaded >= ids.filter(id => document.getElementById(id)).length && loaded > 0) clearInterval(poll);
+                            for (const [vid, aids] of Object.entries(mapping)) {
+                                if (aids.includes(imgId)) {
+                                    const v = visuals.find(item => item.id === vid);
+                                    if (v && v.img) {
+                                        img.src = v.img;
+                                        img.style.opacity = '1';
+                                        img.style.display = 'block';
+                                        img.dataset.prio = '1';
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }, 10);
-                setTimeout(() => clearInterval(poll), 2000);
+                setTimeout(() => clearInterval(poll), 1500);
             } catch (e) { }
         })();
     </script>
@@ -107,16 +129,18 @@
         <div class="hero-background">
             <div class="image-pair" data-interior-pair-id="01">
                 <!-- [Image-Ext-01] -->
-                <img id="heroImgExt" src="assets/images/7.jpeg?v=78" data-src="assets/images/7.jpeg?v=78"
+                <img id="heroImgExt"
+                    src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                    data-src="assets/images/7.jpeg?v=78"
                     alt="Maison modulaire T2 sous la neige avec bardage bois [Image-Ext-01]"
                     class="hero-image hero-image--ext sound-trigger dynamic-img" data-sound="countryside_hero"
                     data-sound-default="countryside_hero" data-sound-interior="music" data-image-id="Image-Ext-01"
-                    loading="eager" fetchpriority="high" style="opacity: 0;">
+                    loading="eager" fetchpriority="high">
                 <!-- [Image-Int-01] -->
                 <img src="" data-src="assets/images/8.jpeg?v=80"
                     alt="Intérieur chaleureux avec vue sur la neige [Image-Int-01]"
-                    class="hero-image hero-image--int image-int dynamic-img" data-image-id="Image-Int-01" loading="lazy"
-                    style="opacity: 0;">
+                    class="hero-image hero-image--int image-int dynamic-img" data-image-id="Image-Int-01"
+                    loading="lazy">
 
                 <div class="hero-overlay"></div>
             </div>
@@ -216,9 +240,10 @@
                     </div>
                 </div>
                 <div class="split-image reveal">
-                    <img id="philoImg" src="" data-src="assets/images/8.jpeg?v=78"
-                        alt="Intérieur murs peints et poutres bois apparentes" loading="lazy" class="dynamic-img"
-                        style="opacity: 0;">
+                    <img id="philoImg"
+                        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                        data-src="assets/images/8.jpeg?v=78" alt="Intérieur murs peints et poutres bois apparentes"
+                        loading="lazy" class="dynamic-img" data-image-id="philosophy" style="opacity: 0;">
                     <button class="image-sound-toggle" data-sound="music" aria-label="Écouter le son de cette image">
                         <svg class="sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 5L6 9H2v6h4l5 4V5z" />
@@ -832,14 +857,17 @@
                     data-target-vol="1.0">
                     <div class="project-preview">
                         <!-- [Image-Ext-06] -->
-                        <img src="assets/images/5.jpeg?v=78" alt="Maison lac forêt vue aérienne [Image-Ext-06]"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/5.jpeg?v=78" alt="Maison lac forêt vue aérienne [Image-Ext-06]"
                             class="project-img-ext" data-image-id="Image-Ext-06" loading="lazy">
                         <!-- [Image-Int-06] -->
-                        <img src="assets/images/8.jpeg?v=78" alt="Intérieur Résidence du Lac [Image-Int-06]"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/8.jpeg?v=78" alt="Intérieur Résidence du Lac [Image-Int-06]"
                             class="project-img-int" data-image-id="Image-Int-06" loading="lazy">
 
                         <!-- Interior Thumbnail -->
-                        <img src="assets/images/8.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/8.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
 
                         <!-- Reveal Toggle Button -->
                         <button class="reveal-toggle" aria-label="Entrer dans l'immersion"
@@ -872,15 +900,18 @@
                 <div class="project-card reveal sound-trigger" data-sound="rain" data-target-vol="1.0">
                     <div class="project-preview">
                         <!-- [Image-Ext-07] -->
-                        <img src="assets/images/4.jpeg?v=78"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/4.jpeg?v=78"
                             alt="Chalet Horizon - Maison modulaire bois sous la neige [Image-Ext-07]"
                             class="project-img-ext" data-image-id="Image-Ext-07" loading="lazy">
                         <!-- [Image-Int-07] -->
-                        <img src="assets/images/10.jpeg?v=78" alt="Intérieur Chalet Horizon [Image-Int-07]"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/10.jpeg?v=78" alt="Intérieur Chalet Horizon [Image-Int-07]"
                             class="project-img-int" data-image-id="Image-Int-07" loading="lazy">
 
                         <!-- Interior Thumbnail -->
-                        <img src="assets/images/10.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/10.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
 
                         <!-- Reveal Toggle Button -->
                         <button class="reveal-toggle" aria-label="Entrer dans l'immersion"
@@ -913,14 +944,17 @@
                 <div class="project-card reveal sound-trigger" data-sound="ocean" data-target-vol="1.0">
                     <div class="project-preview">
                         <!-- [Image-Ext-08] -->
-                        <img src="assets/images/6.jpeg?v=78" alt="Maison forêt pins [Image-Ext-08]"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/6.jpeg?v=78" alt="Maison forêt pins [Image-Ext-08]"
                             class="project-img-ext" data-image-id="Image-Ext-08" loading="lazy">
                         <!-- [Image-Int-08] -->
-                        <img src="assets/images/10.jpeg?v=78" alt="Intérieur Refuge des Pins [Image-Int-08]"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/10.jpeg?v=78" alt="Intérieur Refuge des Pins [Image-Int-08]"
                             class="project-img-int" data-image-id="Image-Int-08" loading="lazy">
 
                         <!-- Interior Thumbnail -->
-                        <img src="assets/images/10.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/10.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
 
                         <!-- Reveal Toggle Button -->
                         <button class="reveal-toggle" aria-label="Entrer dans l'immersion"
@@ -977,14 +1011,17 @@
                 <div class="project-card reveal sound-trigger" data-sound="birds" data-target-vol="1.0">
                     <div class="project-preview">
                         <!-- [Image-Ext-09] -->
-                        <img src="assets/images/1.jpeg?v=78" alt="Retraite Montagne vue extérieure"
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/1.jpeg?v=78" alt="Retraite Montagne vue extérieure"
                             class="project-img-ext" data-image-id="Image-Ext-09" loading="lazy">
                         <!-- [Image-Int-09] -->
-                        <img src="assets/images/8.jpeg?v=78" alt="Intérieur Retraite Montagne" class="project-img-int"
-                            data-image-id="Image-Int-09" loading="lazy">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/8.jpeg?v=78" alt="Intérieur Retraite Montagne"
+                            class="project-img-int" data-image-id="Image-Int-09" loading="lazy">
 
                         <!-- Interior Thumbnail -->
-                        <img src="assets/images/8.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                            data-src="assets/images/8.jpeg?v=78" alt="Aperçu intérieur" class="project-int-thumb">
 
                         <!-- Expand Button - Arrow only -->
                         <button class="project-expand-arrow" aria-label="Agrandir">
