@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Hs4all</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <h1 class="login-title">Hs4all Admin</h1>
+            <p class="login-subtitle">Gestão de projetos e conteúdos</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="password">Palavra-passe</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">Entrar</button>
+            </form>
+            <div class="login-error" id="loginError" style="display: none;">
+                Palavra-passe incorreta
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-container" id="adminContainer" style="display: none;">
+        <header class="admin-header">
+            <h1>Administração Hs4all</h1>
+            <button class="logout-btn" id="logoutBtn">Sair</button>
+        </header>
+
+        <main class="admin-main">
+            <!-- Navigation Tabs -->
+            <nav class="admin-tabs">
+                <button class="tab-btn active" data-target="tab-visuals">Visuais fixos</button>
+                <button class="tab-btn" data-target="tab-projects">Gestão de Projetos</button>
+                <button class="tab-btn" data-target="tab-texts">Textos do Site</button>
+                <button class="tab-btn" data-target="tab-social">Redes Sociais</button>
+            </nav>
+
+            <!-- Fixed Visuals Management -->
+            <section class="admin-section tab-content active" id="tab-visuals">
+                <h2>Visuais fixos do site</h2>
+                <div class="fixed-visuals-list" id="fixedVisualsList">
+                    <!-- Loaded by JS -->
+                </div>
+            </section>
+
+            <!-- Projects Management -->
+            <section class="admin-section tab-content" id="tab-projects">
+                <h2>Gestão de Projetos</h2>
+                <button class="add-btn" id="addProjectBtn">+ Adicionar projeto</button>
+                <div class="projects-list" id="projectsList">
+                    <!-- Loaded by JS -->
+                </div>
+            </section>
+
+            <!-- Text/Translation Management -->
+            <section class="admin-section tab-content" id="tab-texts">
+                <h2>Textos do Site</h2>
+                <div class="texts-list" id="textsList">
+                    <!-- Text blocks will be loaded here by JS -->
+                </div>
+            </section>
+
+            <!-- Social Media Management -->
+            <section class="admin-section tab-content" id="tab-social">
+                <h2>Redes Sociais</h2>
+                <div class="social-settings-container pretty-block" id="socialSettingsContainer">
+                    <p style="margin-bottom: 20px; font-size: 0.9em; color: #666;">Configure os links e escolha quais
+                        redes sociais mostrar no rodapé do site.</p>
+
+                    <div class="social-field-group"
+                        style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label for="socialFacebook" style="font-weight: 600;">Facebook</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; cursor: pointer;">
+                                <input type="checkbox" id="showFacebook" style="width: 16px; height: 16px;"> Visível
+                            </label>
+                        </div>
+                        <input type="url" id="socialFacebook" placeholder="https://facebook.com/votrepage"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+
+                    <div class="social-field-group"
+                        style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label for="socialInstagram" style="font-weight: 600;">Instagram</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; cursor: pointer;">
+                                <input type="checkbox" id="showInstagram" style="width: 16px; height: 16px;"> Visível
+                            </label>
+                        </div>
+                        <input type="url" id="socialInstagram" placeholder="https://instagram.com/votrepage"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+
+                    <div class="social-field-group"
+                        style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label for="socialLinkedin" style="font-weight: 600;">LinkedIn</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; cursor: pointer;">
+                                <input type="checkbox" id="showLinkedin" style="width: 16px; height: 16px;"> Visível
+                            </label>
+                        </div>
+                        <input type="url" id="socialLinkedin" placeholder="https://linkedin.com/company/votrepage"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+
+                    <div class="social-field-group"
+                        style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label for="socialPinterest" style="font-weight: 600;">Pinterest</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; cursor: pointer;">
+                                <input type="checkbox" id="showPinterest" style="width: 16px; height: 16px;"> Visível
+                            </label>
+                        </div>
+                        <input type="url" id="socialPinterest" placeholder="https://pinterest.com/votrepage"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="save-btn" id="saveSocialSettings">💾 Sauvegarder les réglages sociaux</button>
+                    </div>
+                </div>
+            </section>
+    </div>
+    </section>
+    </main>
+    </div>
+
+    <!-- Project Modal -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Adicionar projeto</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="projectForm">
+                    <div class="form-group">
+                        <label>Imagem 1 (Exterior)</label>
+                        <input type="file" id="projectExtImg" name="extImg" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Som 1 (Exterior)</label>
+                        <input type="file" id="projectExtSound" name="extSound" accept="audio/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Imagem 2 (Interior)</label>
+                        <input type="file" id="projectIntImg" name="intImg" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Som 2 (Interior)</label>
+                        <input type="file" id="projectIntSound" name="intSound" accept="audio/*">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Guardar</button>
+                        <button type="button" class="cancel-btn" id="modalCancel">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/storage.js?v=89"></script>
+    <script src="js/translations.js"></script>
+    <script defer src="js/admin.js"></script>
+</body>
+
+</html>
