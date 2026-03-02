@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Diagnostic - HS4ALL</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f4f4f9;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .status {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Firebase Diagnostic Tool</h1>
+        <p>This tool verifies that your browser can communicate with the <strong>hs4all-6801b</strong> Firebase project.
+        </p>
+
+        <div id="connectionStatus" class="status info">Checking connection...</div>
+
+        <button id="runTest">Run Persistent Write Test</button>
+
+        <div id="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAj1Rf9v2X5iV-BFCTy5d8td5ygzQhHwFs",
+            authDomain: "hs4all-6801b.firebaseapp.com",
+            databaseURL: "https://hs4all-6801b-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hs4all-6801b",
+            storageBucket: "hs4all-6801b.firebasestorage.app",
+            messagingSenderId: "485406380101",
+            appId: "1:485406380101:web:d1cd6778f4c6c0995e932c",
+            measurementId: "G-3BQTL6581K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const statusEl = document.getElementById('connectionStatus');
+        const resultsEl = document.getElementById('results');
+        const btn = document.getElementById('runTest');
+
+        // Monitor connection
+        onValue(ref(db, '.info/connected'), (snap) => {
+            if (snap.val() === true) {
+                statusEl.textContent = "🌐 SUCCESS: Connected to Firebase!";
+                statusEl.className = "status success";
+            } else {
+                statusEl.textContent = "⚠️ DISCONNECTED: Waiting for Firebase...";
+                statusEl.className = "status info";
+            }
+        });
+
+        btn.onclick = async () => {
+            resultsEl.innerHTML = '<div class="status info">Testing Write access...</div>';
+            const testKey = 'diagnostic_test_' + Date.now();
+            const testVal = { hello: 'world', timestamp: Date.now() };
+
+            try {
+                // Test 1: Write
+                await set(ref(db, 'diagnostics/' + testKey), testVal);
+                resultsEl.innerHTML += '<div class="status success">✅ WRITE SUCCESS: Test data saved to Firebase.</div>';
+
+                // Test 2: Read
+                const snap = await get(ref(db, 'diagnostics/' + testKey));
+                if (snap.exists() && snap.val().hello === 'world') {
+                    resultsEl.innerHTML += '<div class="status success">✅ READ SUCCESS: Verified data integrity.</div>';
+                } else {
+                    resultsEl.innerHTML += '<div class="status error">❌ READ ERROR: Data mismatch or not found.</div>';
+                }
+
+                // Test 3: Large Payload Write (300KB)
+                resultsEl.innerHTML += '<div class="status info">Testing Large Payload (300KB)...</div>';
+                const largeStr = "X".repeat(300 * 1024);
+                try {
+                    await set(ref(db, 'diagnostics/large_test'), { data: largeStr });
+                    resultsEl.innerHTML += '<div class="status success">✅ LARGE WRITE SUCCESS: Your rules allow payloads > 256KB!</div>';
+                } catch (e) {
+                    resultsEl.innerHTML += `<div class="status error">⚠️ LARGE WRITE BLOCKED: ${e.message}. (This is why chunking is active in storage.js)</div>`;
+                }
+
+            } catch (e) {
+                resultsEl.innerHTML += `<div class="status error">❌ FATAL ERROR: ${e.message}</div>`;
+                resultsEl.innerHTML += `<p>Possible cause: <strong>Security Rules</strong> are not set to public, or the <strong>API Key</strong> is restricted.</p>`;
+            }
+        };
+    </script>
+</body>
+
+</html>

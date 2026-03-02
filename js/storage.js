@@ -73,7 +73,7 @@ const IDBStore = {
 const firebaseConfig = {
     apiKey: "AIzaSyAj1Rf9v2X5iV-BFCTy5d8td5ygzQhHwFs",
     authDomain: "hs4all-6801b.firebaseapp.com",
-    databaseURL: "https://hs4all-6801b-default-rtdb.europe-west1.firebasedatabase.app/",
+    databaseURL: "https://hs4all-6801b-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "hs4all-6801b",
     storageBucket: "hs4all-6801b.firebasestorage.app",
     messagingSenderId: "485406380101",
@@ -84,12 +84,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firebaseDB = getDatabase(app);
 
+// Diagnostic: Check Firebase connection on load
+get(ref(firebaseDB, '.info/connected')).then(snap => {
+    if (snap.val() === true) {
+        console.info('[StorageDB] 🌐 Firebase Connected');
+    } else {
+        console.warn('[StorageDB] ⚠️ Firebase Disconnected');
+    }
+}).catch(e => console.error('[StorageDB] ❌ Firebase Auth/Connection error:', e));
+
 // ============================================
 // Chunking helpers
 // Firebase Realtime DB leaf nodes should stay under 256KB.
 // We split large JSON strings into 200KB chunks.
 // ============================================
-const CHUNK_SIZE = 200 * 1024; // 200KB per chunk (safe margin under 256KB limit)
+const CHUNK_SIZE = 200 * 1024; // 200KB per chunk
 
 function _chunkString(str) {
     const chunks = [];
@@ -125,21 +134,37 @@ function _restore(obj) {
 }
 
 // ============================================
-// Write a value to Firebase, using chunking for large values
+// Write a value to Firebase, using individual chunk nodes for reliability
 // ============================================
 async function _firebaseSet(key, val) {
     const jsonStr = JSON.stringify(_sanitize(val));
 
     if (jsonStr.length <= CHUNK_SIZE) {
         // Small enough — write directly
-        await set(ref(firebaseDB, 'data/' + key), { _v: 1, _single: jsonStr });
+        await set(ref(firebaseDB, 'data/' + key), { _v: 2, _single: jsonStr });
     } else {
         // Large — split into chunks
         const chunks = _chunkString(jsonStr);
-        const payload = { _v: 1, _chunked: true, _count: chunks.length };
-        chunks.forEach((c, i) => { payload['_c' + i] = c; });
-        await set(ref(firebaseDB, 'data/' + key), payload);
-        console.log(`[StorageDB] Wrote ${chunks.length} chunks for key "${key}" (${(jsonStr.length / 1024).toFixed(1)} KB)`);
+
+        // 1. Clear previous chunks if any (to avoid orphans)
+        await remove(ref(firebaseDB, 'data/' + key));
+
+        // 2. Write Metadata
+        await set(ref(firebaseDB, 'data/' + key + '/meta'), {
+            _v: 2,
+            _chunked: true,
+            _count: chunks.length,
+            _totalSize: jsonStr.length,
+            _timestamp: Date.now()
+        });
+
+        // 3. Write individual chunks in parallel for speed
+        const chunkPromises = chunks.map((chunk, i) => {
+            return set(ref(firebaseDB, `data/${key}/chunks/c${i}`), chunk);
+        });
+
+        await Promise.all(chunkPromises);
+        console.log(`[StorageDB] ✅ Wrote ${chunks.length} chunks for "${key}" (${(jsonStr.length / 1024).toFixed(1)} KB)`);
     }
 }
 
@@ -147,41 +172,60 @@ async function _firebaseSet(key, val) {
 // Read a value from Firebase, reassembling chunks if needed
 // ============================================
 async function _firebaseGet(key) {
+    // Increased timeout to 30s for large assets
+    const timeoutMsg = `timeout reading ${key}`;
     const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 15000)
+        setTimeout(() => reject(new Error(timeoutMsg)), 30000)
     );
+
     const snapshot = await Promise.race([
         get(ref(firebaseDB, 'data/' + key)),
         timeoutPromise
     ]);
 
     if (!snapshot.exists()) return null;
-
     const raw = snapshot.val();
 
-    if (!raw || !raw._v) {
-        // Legacy format (written before chunking was added) — restore directly
+    // Support Legacy (_v=1 or older)
+    if (!raw._v && !raw.meta) {
         return _restore(raw);
     }
 
-    let jsonStr;
-    if (raw._chunked) {
-        // Reassemble chunks
-        const parts = [];
-        for (let i = 0; i < raw._count; i++) {
-            parts.push(raw['_c' + i]);
+    // Support v1 chunking (metadata in same node)
+    if (raw._v === 1) {
+        if (raw._chunked) {
+            const parts = [];
+            for (let i = 0; i < raw._count; i++) {
+                parts.push(raw['_c' + i]);
+            }
+            return _restore(JSON.parse(parts.join('')));
         }
-        jsonStr = parts.join('');
-    } else {
-        jsonStr = raw._single;
+        return _restore(JSON.parse(raw._single));
     }
 
-    try {
-        return _restore(JSON.parse(jsonStr));
-    } catch (e) {
-        console.error('[StorageDB] JSON parse error for key', key, e);
-        return null;
+    // Support v2 chunking (metadata in /meta, chunks in /chunks)
+    const meta = raw.meta || raw;
+    if (meta._chunked) {
+        const parts = [];
+        const chunkData = raw.chunks || {};
+        for (let i = 0; i < meta._count; i++) {
+            const p = chunkData['c' + i];
+            if (p === undefined) throw new Error(`Missing chunk c${i} for ${key}`);
+            parts.push(p);
+        }
+        try {
+            return _restore(JSON.parse(parts.join('')));
+        } catch (e) {
+            console.error('[StorageDB] Reconstruction failed', key, e);
+            return null;
+        }
     }
+
+    if (raw._single) {
+        return _restore(JSON.parse(raw._single));
+    }
+
+    return _restore(raw);
 }
 
 // ============================================
