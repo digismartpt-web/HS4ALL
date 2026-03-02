@@ -298,8 +298,8 @@ function renderTexts() {
         showStatus('A verificar alterações...', false);
 
         try {
-            // Collect all PT texts from textareas
-            const ptInputs = container.querySelectorAll('textarea[data-lang="pt"]');
+            // Collect all PT texts from inputs and textareas
+            const ptInputs = container.querySelectorAll('.text-input[data-lang="pt"]');
             const ptTexts = {};
             ptInputs.forEach(el => {
                 ptTexts[el.getAttribute('data-key')] = el.value;

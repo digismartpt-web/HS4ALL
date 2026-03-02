@@ -148,9 +148,9 @@ async function _firebaseSet(key, val) {
         // Large — split into chunks
         const chunks = _chunkString(jsonStr);
 
-        // 1. Clear previous chunks if any (to avoid orphans)
-        await remove(ref(firebaseDB, 'data/' + key));
-
+        // 1. We DO NOT 'remove' the node first. 
+        // If the user closes the page during upload, 'remove' would leave the DB empty.
+        // Old chunks > new_count will become harmless orphans.
         // 2. Write Metadata
         await set(ref(firebaseDB, 'data/' + key + '/meta'), {
             _v: 2,
