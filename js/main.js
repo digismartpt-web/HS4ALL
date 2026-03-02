@@ -196,6 +196,15 @@ function initLocalization() {
             }
         }, 100);
     }
+    // Live sync: Listen for updates from StorageDB (admin saves or background fetches)
+    window.addEventListener('StorageDBUpdated', (e) => {
+        const { key } = e.detail;
+        if (key === 'hs4all_texts') {
+            tryLoadCustomTexts();
+        } else if (key === 'hs4all_logo_img') {
+            initLogoImage();
+        }
+    });
 }
 
 function setLanguage(lang) {

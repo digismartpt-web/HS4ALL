@@ -135,6 +135,8 @@ function _restore(obj) {
 
 // ============================================
 // Write a value to Firebase, using individual chunk nodes for reliability
+// SEQUENTIAL WRITE (v2.2): We write chunks one by one to avoid saturating 
+// concurrent connections which can lead to silent data loss on large files.
 // ============================================
 async function _firebaseSet(key, val) {
     const jsonStr = JSON.stringify(_sanitize(val));
@@ -158,13 +160,12 @@ async function _firebaseSet(key, val) {
             _timestamp: Date.now()
         });
 
-        // 3. Write individual chunks in parallel for speed
-        const chunkPromises = chunks.map((chunk, i) => {
-            return set(ref(firebaseDB, `data/${key}/chunks/c${i}`), chunk);
-        });
+        // 3. Write individual chunks SEQUENTIALLY for extreme reliability
+        for (let i = 0; i < chunks.length; i++) {
+            await set(ref(firebaseDB, `data/${key}/chunks/c${i}`), chunks[i]);
+        }
 
-        await Promise.all(chunkPromises);
-        console.log(`[StorageDB] ✅ Wrote ${chunks.length} chunks for "${key}" (${(jsonStr.length / 1024).toFixed(1)} KB)`);
+        console.log(`[StorageDB] ✅ Wrote ${chunks.length} chunks sequentially for "${key}" (${(jsonStr.length / 1024).toFixed(1)} KB)`);
     }
 }
 
@@ -209,7 +210,7 @@ async function _firebaseGet(key) {
         const parts = [];
         const chunkData = raw.chunks || {};
         for (let i = 0; i < meta._count; i++) {
-            // Support both object prefix 'c0' and array index 0
+            // Support both object prefix 'c0' and array index 0 (Firebase sometimes auto-maps)
             const p = chunkData['c' + i] !== undefined ? chunkData['c' + i] : chunkData[i];
             if (p === undefined) throw new Error(`Missing chunk ${i} for ${key}`);
             parts.push(p);
@@ -252,6 +253,9 @@ const StorageDB = {
     async set(key, val) {
         const ts = Date.now();
 
+        // Broadcast intent immediately for UI responsiveness
+        window.dispatchEvent(new CustomEvent('StorageDBUpdating', { detail: { key } }));
+
         // PRIMARY: Write to Firebase FIRST (awaited — shared across all browsers)
         let firebaseOk = false;
         try {
@@ -269,13 +273,15 @@ const StorageDB = {
         // CACHE: Write to IndexedDB (local cache, no size limit)
         await IDBStore.set(key, val);
 
-        // CACHE: Also write to localStorage (best-effort, may fail for large data)
+        // CACHE: Also write to localStorage (best-effort, quota may fail)
         try {
             localStorage.setItem(key, JSON.stringify(val));
         } catch (e) {
-            console.warn('[StorageDB] localStorage quota exceeded for key:', key, '— IndexedDB cache used.');
+            console.warn('[StorageDB] localStorage quota exceeded for key:', key);
         }
 
+        // Final broadcast
+        window.dispatchEvent(new CustomEvent('StorageDBUpdated', { detail: { key, val, remote: firebaseOk } }));
         return firebaseOk;
     },
 
