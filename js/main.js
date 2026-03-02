@@ -149,6 +149,7 @@ function initLocalization() {
             if (customTexts && window.translations) {
                 // Merge custom texts into window.translations for ALL known languages
                 const allLangs = Object.keys(window.translations);
+                let mergedCount = 0;
                 allLangs.forEach(lang => {
                     if (customTexts[lang] && window.translations[lang]) {
                         Object.keys(customTexts[lang]).forEach(key => {
@@ -160,13 +161,20 @@ function initLocalization() {
                                 // We only block dangerous or artifact tags, not <br> which is legitimate in titles.
                                 const isCorrupted = /<(g|path|svg|defs|use|circle|rect|polygon|ellipse|ex\b)/i.test(val);
                                 if (isCorrupted) return;
-                                if (val) window.translations[lang][key] = val;
+                                if (val) {
+                                    window.translations[lang][key] = val;
+                                    mergedCount++;
+                                }
                             }
                         });
                     }
                 });
-                // Re-apply translations to show any custom text overrides
-                setLanguage(localStorage.getItem('hs4all_lang') || 'pt');
+                if (mergedCount > 0) {
+                    console.info(`[Sync] ✅ Merged ${mergedCount} custom text keys from Firebase.`);
+                    setLanguage(localStorage.getItem('hs4all_lang') || 'pt');
+                } else {
+                    console.info('[Sync] ℹ️ No custom texts found in Firebase, using defaults.');
+                }
             }
         } catch (e) {
             console.warn('Could not load custom texts from Firebase:', e);

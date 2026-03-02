@@ -209,8 +209,9 @@ async function _firebaseGet(key) {
         const parts = [];
         const chunkData = raw.chunks || {};
         for (let i = 0; i < meta._count; i++) {
-            const p = chunkData['c' + i];
-            if (p === undefined) throw new Error(`Missing chunk c${i} for ${key}`);
+            // Support both object prefix 'c0' and array index 0
+            const p = chunkData['c' + i] !== undefined ? chunkData['c' + i] : chunkData[i];
+            if (p === undefined) throw new Error(`Missing chunk ${i} for ${key}`);
             parts.push(p);
         }
         try {
