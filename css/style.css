@@ -2128,6 +2128,19 @@ address {
    - ≤480px  : Mobile small
    ============================================ */
 
+/* Comparison Grid System */
+.comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-3xl);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
 /* ---- ≤1024px : Tablet landscape / small desktop ---- */
 @media (max-width: 1024px) {
 
@@ -2934,18 +2947,6 @@ address {
     z-index: 2;
 }
 
-/* Comparison Grid System */
-.comparison-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
-    margin-bottom: var(--space-3xl);
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
-    z-index: 10;
-}
 
 .comparison-card {
     position: relative;
