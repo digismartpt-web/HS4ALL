@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             initScrollReveal();
             initParallax();
-            initSoundSystem();
             initRainEffect();
             initFormHandler();
             initVoiceOver();
@@ -31,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
             initProjectCloseButtons();
             initProjectsModal();
             initAllSoundToggles();
+
+            // Defer sound system to the very end for better initial paint performance
+            setTimeout(() => {
+                initSoundSystem();
+                console.log('Sound modules initialized lazily');
+            }, 500);
+
             console.log('Secondary modules initialized successfully');
         } catch (e) {
             console.error('Secondary initialization error:', e);
@@ -1060,6 +1066,11 @@ function initProjectsModal() {
     // Open modal
     openBtn.addEventListener('click', (e) => {
         e.preventDefault();
+
+        // STOP ALL sounds before opening the "View All" modal
+        if (window.simpleSoundManager) window.simpleSoundManager.stopAll();
+        if (window.soundManager) window.soundManager.stopAll();
+
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
 
@@ -1136,6 +1147,11 @@ function initFullscreenView(modal) {
 
         arrow.addEventListener('click', (e) => {
             e.stopPropagation();
+
+            // STOP ALL sounds before opening fullscreen
+            if (window.simpleSoundManager) window.simpleSoundManager.stopAll();
+            if (window.soundManager) window.soundManager.stopAll();
+
             const card = arrow.closest('.project-card');
             if (!card) return;
 

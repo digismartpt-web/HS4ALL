@@ -2189,7 +2189,7 @@ address {
     /* Philosophy split */
     .split-layout {
         grid-template-columns: 1fr;
-        gap: var(--space-2xl);
+        gap: var(--space-sm);
     }
 
     .split-content {
@@ -2297,7 +2297,7 @@ address {
     /* Comparison grid */
     .comparison-grid {
         grid-template-columns: 1fr;
-        gap: 0;
+        gap: var(--space-md);
     }
 
     .comparison-card {
@@ -2394,7 +2394,7 @@ address {
 
     /* Split layout image */
     .split-image {
-        min-height: 300px;
+        min-height: auto;
     }
 
     .split-image img {
@@ -2460,6 +2460,8 @@ address {
         flex-wrap: wrap;
         justify-content: center;
         gap: var(--space-sm);
+        text-align: center;
+        width: 100%;
     }
 
     .badge {
@@ -2488,8 +2490,9 @@ address {
     .reveal-toggle {
         bottom: var(--space-md);
         left: var(--space-md);
-        width: calc(100% - 2 * var(--space-md));
-        justify-content: center;
+        width: auto;
+        padding: var(--space-xs) var(--space-md);
+        font-size: 10px;
     }
 
     .project-int-thumb {

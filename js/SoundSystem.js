@@ -34,7 +34,7 @@ class SoundManager {
             console.warn('Web Audio API not supported', e);
         }
 
-        // 2. Setup File Assets
+        // 2. Setup File Assets - Load progressively in background
         const assets = {
             'workshop': 'assets/audio/workshop.mp3',
             'music': 'assets/audio/music_gentle.mp3',
@@ -59,19 +59,35 @@ class SoundManager {
             'interior_waterfall': 'assets/audio/interior_waterfall.mp3'
         };
 
-        for (const [key, src] of Object.entries(assets)) {
-            // ONLY create default if no custom audio was injected for this key
-            // This prevents the init() from wiping out administrator-configured audio
+        const entries = Object.entries(assets);
+        let index = 0;
+
+        const loadNext = () => {
+            if (index >= entries.length) {
+                console.log('--- AUDIO: All sounds initialized in background ---');
+                return;
+            }
+
+            const [key, src] = entries[index];
             if (!this.sounds[key] || this.sounds[key].dataset.valid !== 'true') {
                 const audio = new Audio(src);
                 audio.loop = true;
                 audio.volume = 0;
-                // Mark as valid only if it loads (simple check)
                 audio.addEventListener('canplaythrough', () => { audio.dataset.valid = 'true'; });
                 audio.addEventListener('error', () => { audio.dataset.valid = 'false'; });
                 this.sounds[key] = audio;
             }
-        }
+
+            index++;
+            // Request idle callback or minor timeout to stay off main thread
+            if (window.requestIdleCallback) {
+                window.requestIdleCallback(loadNext);
+            } else {
+                setTimeout(loadNext, 100);
+            }
+        };
+
+        loadNext();
 
         // Specific volume boosts
         if (this.sounds['frogs_lake']) this.sounds['frogs_lake'].dataset.targetVol = '1.0';

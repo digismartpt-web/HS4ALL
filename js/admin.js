@@ -57,34 +57,35 @@ function normalizeArray(data, defaults) {
 // Data Initialization
 // ============================================
 async function initAdminData() {
-    console.log('[Admin] Initializing data...');
-    try {
-        // StorageDB already prioritizes Firebase if available. 
-        // We call get() which will check Firebase version and fetch if needed.
-        const rawProjects = await window.StorageDB.get('hs4all_projects');
-        projectsData = normalizeArray(rawProjects, defaultProjects);
+    console.log('[Admin] Initializing data progressively...');
 
-        const rawVisuals = await window.StorageDB.get('hs4all_fixed_visuals');
+    // 1. Load and Render Fixed Visuals
+    window.StorageDB.get('hs4all_fixed_visuals').then(rawVisuals => {
         fixedVisualsData = normalizeArray(rawVisuals, defaultFixedVisuals);
+        if (window.adminIsLoggedIn) renderFixedVisuals();
+        console.log('[Admin] Fixed visuals loaded');
+    });
 
-        const rawTexts = await window.StorageDB.get('hs4all_texts');
+    // 2. Load and Render Projects
+    window.StorageDB.get('hs4all_projects').then(rawProjects => {
+        projectsData = normalizeArray(rawProjects, defaultProjects);
+        if (window.adminIsLoggedIn) renderProjects();
+        console.log('[Admin] Projects loaded');
+    });
+
+    // 3. Load and Render Texts
+    window.StorageDB.get('hs4all_texts').then(rawTexts => {
         textsData = (rawTexts && typeof rawTexts === 'object') ? rawTexts : {};
+        if (window.adminIsLoggedIn) renderTexts();
+        console.log('[Admin] Texts loaded');
+    });
 
-        const rawSocial = await window.StorageDB.get('hs4all_social_settings');
+    // 4. Load and Render Social Settings
+    window.StorageDB.get('hs4all_social_settings').then(rawSocial => {
         if (rawSocial) socialSettingsData = { ...socialSettingsData, ...rawSocial };
-
-    } catch (e) {
-        console.error('Admin data load failed:', e);
-        projectsData = defaultProjects;
-        fixedVisualsData = defaultFixedVisuals;
-        textsData = {};
-    }
-
-    // Render now that data is ready
-    if (window.adminIsLoggedIn) {
-        renderAll();
-    }
-    console.log('[Admin] Data initialized from StorageDB');
+        if (window.adminIsLoggedIn) renderSocialSettings();
+        console.log('[Admin] Social settings loaded');
+    });
 }
 
 function renderAll() {
