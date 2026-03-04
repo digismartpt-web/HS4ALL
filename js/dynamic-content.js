@@ -464,14 +464,14 @@ function generateProjectCardHtml(project, index) {
              data-target-vol="1.0">
             <div class="project-preview">
                 <!-- Exterior Image -->
-                <img src="" data-src="${project.img1}" alt="${project.title}" class="project-img-ext dynamic-img" loading="lazy" style="opacity: 0;">
+                <img src="${project.img1}" data-src="${project.img1}" alt="${project.title}" class="project-img-ext dynamic-img" loading="lazy">
 ...
 
                 <!-- Interior Image -->
-                <img src="" data-src="${project.img2}" alt="Intérieur ${project.title}" class="project-img-int dynamic-img" loading="lazy" style="opacity: 0;">
+                <img src="${project.img2}" data-src="${project.img2}" alt="Intérieur ${project.title}" class="project-img-int dynamic-img" loading="lazy">
 
                 <!-- Interior Thumbnail -->
-                <img src="" data-src="${project.img2}" alt="Aperçu intérieur" class="project-int-thumb dynamic-img" style="opacity: 0;">
+                <img src="${project.img2}" data-src="${project.img2}" alt="Aperçu intérieur" class="project-int-thumb dynamic-img">
 
                 <!-- Expand Button - Arrow only -->
                 <button class="project-expand-arrow" aria-label="Agrandir">
