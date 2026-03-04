@@ -366,7 +366,7 @@ address {
 
 .nav-logo {
     font-family: var(--font-serif);
-    font-size: var(--text-xl);
+    font-size: 1.8rem;
     font-weight: 500;
     letter-spacing: 0.1em;
     color: var(--color-charcoal);
@@ -1168,6 +1168,12 @@ address {
     color: var(--color-charcoal);
     border: 1px solid var(--color-wood-light);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+}
+
+#footerLogoText {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    font-weight: 500;
 }
 
 .sustainability-content {

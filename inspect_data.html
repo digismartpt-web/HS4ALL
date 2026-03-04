@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Data Scanner - HS4ALL</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #f0f2f5;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: #1a73e8;
+            margin-top: 0;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .info {
+            background: #e8f0fe;
+            color: #1967d2;
+            border: 1px solid #d2e3fc;
+        }
+
+        .success {
+            background: #e6f4ea;
+            color: #137333;
+            border: 1px solid #ceead6;
+        }
+
+        .warning {
+            background: #fef7e0;
+            color: #b06000;
+            border: 1px solid #feefc3;
+        }
+
+        .error {
+            background: #fce8e6;
+            color: #c5221f;
+            border: 1px solid #fad2cf;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #dadce0;
+            font-size: 12px;
+            max-height: 400px;
+        }
+
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1765d1;
+        }
+
+        button:disabled {
+            background: #dadce0;
+            cursor: not-allowed;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .base64-found {
+            border-left: 5px solid #d93025;
+            background: #fff8f7;
+        }
+
+        .storage-url {
+            border-left: 5px solid #1e8e3e;
+            background: #f6fbf7;
+        }
+
+        .placeholder {
+            border-left: 5px solid #f9ab00;
+            background: #fefdf4;
+        }
+
+        .clean-actions {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 13px;
+            color: #5f6368;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .key {
+            font-family: monospace;
+            font-size: 14px;
+            color: #202124;
+        }
+
+        .value-preview {
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            color: #70757a;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Firebase Data Scanner</h1>
+        <p>Ce script analyse la Realtime Database pour identifier les champs contenant du base64 (anciennes données) vs
+            les URLs Firebase Storage.</p>
+
+        <div id="connectionStatus" class="status info">Initialisation...</div>
+
+        <button id="scanBtn">🔍 Lancer le Scan Complet</button>
+
+        <div id="results" style="margin-top: 30px;"></div>
+
+        <div id="cleanSection" class="clean-actions" style="display:none;">
+            <h2 style="color: #d93025; margin-top: 0;">Nettoyage des Données</h2>
+            <p>Voulez-vous remplacer tous les champs base64 identifiés par une valeur vide ?</p>
+            <p><small>Note: Seuls les champs de type `pX_imgX` ou `img` seront touchés. Les URLs Storage seront
+                    conservées.</small></p>
+            <button id="cleanBtn" style="background: #d93025;">🧹 Nettoyer les base64 (remplacer par vide)</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // CONFIG ALIGNÉE AVEC LE PROJET
+        const firebaseConfig = {
+            apiKey: "AIzaSyAj1Rf9v2X5iV-BFCTy5d8td5ygzQhHwFs",
+            authDomain: "hs4all-6801b.firebaseapp.com",
+            databaseURL: "https://hs4all-6801b-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hs4all-6801b",
+            storageBucket: "hs4all-6801b.firebasestorage.app",
+            messagingSenderId: "485406380101",
+            appId: "1:485406380101:web:d1cd6778f4c6c0995e932c",
+            measurementId: "G-3BQTL6581K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const statusEl = document.getElementById('connectionStatus');
+        const resultsEl = document.getElementById('results');
+        const btn = document.getElementById('scanBtn');
+        const cleanSection = document.getElementById('cleanSection');
+        const cleanBtn = document.getElementById('cleanBtn');
+
+        onValue(ref(db, '.info/connected'), (snap) => {
+            if (snap.val() === true) {
+                statusEl.textContent = "🌐 Connecté à Firebase";
+                statusEl.className = "status success";
+                btn.disabled = false;
+            } else {
+                statusEl.textContent = "⚠️ Déconnecté";
+                statusEl.className = "status error";
+                btn.disabled = true;
+            }
+        });
+
+        // Simule storage.js logic
+        async function fetchKey(key) {
+            const snap = await get(ref(db, 'data/' + key));
+            if (!snap.exists()) return null;
+            const raw = snap.val();
+
+            const meta = raw.meta || raw;
+            if (meta._chunked) {
+                const parts = [];
+                const chunkData = raw.chunks || {};
+                for (let i = 0; i < meta._count; i++) {
+                    const p = chunkData['c' + i] !== undefined ? chunkData['c' + i] : chunkData[i];
+                    if (p) parts.push(p);
+                }
+                try {
+                    return JSON.parse(parts.join(''));
+                } catch (e) { return null; }
+            }
+            if (raw._single) return JSON.parse(raw._single);
+            return raw;
+        }
+
+        async function setKey(key, val) {
+            const jsonStr = JSON.stringify(val);
+            // On simplifie : on écrit en _single pour les petits objets
+            if (jsonStr.length < 204800) {
+                await set(ref(db, 'data/' + key), { _v: 2, _single: jsonStr });
+            } else {
+                alert("Impossible de sauvegarder : données trop volumineuses pour ce script simplifié.");
+            }
+        }
+
+        let allDataToClean = {};
+
+        btn.onclick = async () => {
+            btn.disabled = true;
+            resultsEl.innerHTML = '<div class="status info">Scan en cours...</div>';
+
+            const keysToScan = ['hs4all_projects', 'hs4all_fixed_visuals', 'hs4all_logo_img'];
+            let foundBase64 = 0;
+            let report = '';
+            allDataToClean = {};
+
+            for (const rootKey of keysToScan) {
+                const data = await fetchKey(rootKey);
+                if (!data) {
+                    report += `<div class="result-item"><strong>${rootKey}</strong>: Aucune donnée trouvée.</div>`;
+                    continue;
+                }
+
+                allDataToClean[rootKey] = JSON.parse(JSON.stringify(data));
+                report += `<h3>Root Key: ${rootKey}</h3>`;
+
+                const checkAndMark = (val, path, obj, prop) => {
+                    if (!val) return;
+                    if (typeof val === 'string') {
+                        if (val.startsWith('data:image/')) {
+                            foundBase64++;
+                            report += `
+                                <div class="result-item base64-found">
+                                    <span class="label">🛑 BASE64 DETECTÉ</span>
+                                    <span class="key">${path}</span>
+                                    <div class="value-preview">${val.substring(0, 100)}...</div>
+                                </div>
+                            `;
+                            // On marque pour suppression
+                            if (obj) obj[prop] = "";
+                        }
+                    } else if (Array.isArray(val)) {
+                        val.forEach((item, i) => checkAndMark(item, `${path}[${i}]`, val, i));
+                    } else if (typeof val === 'object') {
+                        for (const k in val) {
+                            checkAndMark(val[k], `${path}.${k}`, val, k);
+                        }
+                    }
+                };
+
+                checkAndMark(allDataToClean[rootKey], rootKey, null, null);
+            }
+
+            resultsEl.innerHTML = `
+                <div class="status ${foundBase64 > 0 ? 'warning' : 'success'}">
+                    Scan terminé. Base64 trouvé : ${foundBase64}
+                </div>
+                ${report}
+            `;
+
+            if (foundBase64 > 0) {
+                cleanSection.style.display = 'block';
+            }
+            btn.disabled = false;
+        };
+
+        cleanBtn.onclick = async () => {
+            if (!confirm("Voulez-vous vraiment écraser les données base64 par une chaîne vide ? Cette action est irréversible.")) return;
+
+            cleanBtn.disabled = true;
+            statusEl.textContent = "⏳ Nettoyage en cours...";
+
+            try {
+                for (const k in allDataToClean) {
+                    await setKey(k, allDataToClean[k]);
+                }
+                alert("Nettoyage terminé !");
+                location.reload();
+            } catch (e) {
+                alert("Erreur de nettoyage : " + e.message);
+            }
+            cleanBtn.disabled = false;
+        };
+    </script>
+</body>
+
+</html>
