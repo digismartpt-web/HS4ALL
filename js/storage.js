@@ -18,6 +18,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 // ============================================
 // IndexedDB wrapper — no size limit, used as LOCAL CACHE only
@@ -83,6 +84,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const firebaseDB = getDatabase(app);
+const firebaseStorage = getStorage(app);
 
 // Diagnostic: Check Firebase connection on load
 get(ref(firebaseDB, '.info/connected')).then(snap => {
@@ -236,6 +238,25 @@ async function _firebaseGet(key) {
 const StorageDB = {
     // In-memory version timestamps to detect stale cache
     _versions: {},
+
+    /**
+     * Upload a binary file to Firebase Storage and return the public URL
+     * @param {string} path - The path in storage (e.g., 'images/hero.jpg')
+     * @param {File|Blob} file - The file to upload
+     */
+    async uploadFile(path, file) {
+        try {
+            console.log(`[StorageDB] 📤 Uploading to Storage: ${path} (${(file.size / 1024).toFixed(1)} KB)`);
+            const storageRef = sRef(firebaseStorage, path);
+            const snapshot = await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(snapshot.ref);
+            console.log(`[StorageDB] ✅ Uploaded: ${url}`);
+            return url;
+        } catch (e) {
+            console.error('[StorageDB] ❌ Storage upload failed:', e);
+            throw e;
+        }
+    },
 
     _getLocalVersion(key) {
         if (this._versions[key]) return this._versions[key];

@@ -57,7 +57,10 @@ function normalizeArray(data, defaults) {
 // Data Initialization
 // ============================================
 async function initAdminData() {
+    console.log('[Admin] Initializing data...');
     try {
+        // StorageDB already prioritizes Firebase if available. 
+        // We call get() which will check Firebase version and fetch if needed.
         const rawProjects = await window.StorageDB.get('hs4all_projects');
         projectsData = normalizeArray(rawProjects, defaultProjects);
 
@@ -81,6 +84,7 @@ async function initAdminData() {
     if (window.adminIsLoggedIn) {
         renderAll();
     }
+    console.log('[Admin] Data initialized from StorageDB');
 }
 
 function renderAll() {
@@ -128,40 +132,50 @@ function renderFixedVisuals() {
 function handleFixedVisualImgChange(id, event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+
+    // Use a button for loading feedback if possible, or just log
+    console.log(`Uploading image for ${id}...`);
+
+    const path = `visuals/${id}_${Date.now()}_${file.name}`;
+    window.StorageDB.uploadFile(path, file).then(async (url) => {
         const idx = fixedVisualsData.findIndex(v => v.id === id);
         if (idx !== -1) {
-            fixedVisualsData[idx].img = e.target.result;
+            fixedVisualsData[idx].img = url;
             await window.StorageDB.set('hs4all_fixed_visuals', fixedVisualsData);
             renderFixedVisuals();
         }
-    };
-    reader.readAsDataURL(file);
+    }).catch(err => {
+        alert("Erreur lors de l'upload de l'image");
+        console.error(err);
+    });
 }
 
 function handleFixedVisualAudioChange(id, event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+    console.log(`Uploading audio for ${id}...`);
+    const path = `audio/${id}_${Date.now()}_${file.name}`;
+
+    window.StorageDB.uploadFile(path, file).then(async (url) => {
         const idx = fixedVisualsData.findIndex(v => v.id === id);
         if (idx !== -1) {
-            fixedVisualsData[idx].sound = e.target.result;
+            fixedVisualsData[idx].sound = url;
 
             // Update audio element directly without full render
             const audioEl = event.target.closest('.fixed-visual-audio-wrap')?.querySelector('audio');
             if (audioEl) {
-                audioEl.src = e.target.result;
+                audioEl.src = url;
                 audioEl.load();
             }
 
             await window.StorageDB.set('hs4all_fixed_visuals', fixedVisualsData);
-            console.log(`Updated sound for ${id} locally and in DB.`);
+            console.log(`Updated sound for ${id} in Storage and DB.`);
         }
-    };
-    reader.readAsDataURL(file);
+    }).catch(err => {
+        alert("Erreur lors de l'upload du son");
+        console.error(err);
+    });
 }
 
 // ============================================
@@ -216,40 +230,45 @@ function renderProjects() {
 function handleProjectImgChange(id, imgNum, event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+
+    const path = `projects/p${id}_img${imgNum}_${Date.now()}_${file.name}`;
+    window.StorageDB.uploadFile(path, file).then(async (url) => {
         const idx = projectsData.findIndex(p => String(p.id) === String(id));
         if (idx !== -1) {
-            projectsData[idx][`img${imgNum}`] = e.target.result;
+            projectsData[idx][`img${imgNum}`] = url;
             await window.StorageDB.set('hs4all_projects', projectsData);
             renderProjects();
         }
-    };
-    reader.readAsDataURL(file);
+    }).catch(err => {
+        alert("Erreur lors de l'upload de l'image");
+        console.error(err);
+    });
 }
 
 function handleProjectSoundChange(id, soundNum, event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+    const path = `projects/p${id}_sound${soundNum}_${Date.now()}_${file.name}`;
+    window.StorageDB.uploadFile(path, file).then(async (url) => {
         const idx = projectsData.findIndex(p => String(p.id) === String(id));
         if (idx !== -1) {
-            projectsData[idx][`sound${soundNum}`] = e.target.result;
+            projectsData[idx][`sound${soundNum}`] = url;
 
             // Update audio element directly
             const audioEl = event.target.closest('.project-img-audio')?.querySelector('audio');
             if (audioEl) {
-                audioEl.src = e.target.result;
+                audioEl.src = url;
                 audioEl.load();
             }
 
             await window.StorageDB.set('hs4all_projects', projectsData);
-            console.log(`Updated project ${id} sound${soundNum} locally and in DB.`);
+            console.log(`Updated project ${id} sound${soundNum} in Storage and DB.`);
         }
-    };
-    reader.readAsDataURL(file);
+    }).catch(err => {
+        alert("Erreur lors de l'upload du son");
+        console.error(err);
+    });
 }
 
 async function deleteProject(id) {
@@ -602,30 +621,32 @@ async function handleLogoImgChange(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-        alert("L'image est trop grande (max 2MB)");
+    if (file.size > 5 * 1024 * 1024) { // Increased to 5MB since it's Storage now
+        alert("L'image est trop grande (max 5MB)");
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const dataUrl = e.target.result;
-        await window.StorageDB.set('hs4all_logo_img', dataUrl);
+    try {
+        const path = `logo/logo_${Date.now()}_${file.name}`;
+        const url = await window.StorageDB.uploadFile(path, file);
+        await window.StorageDB.set('hs4all_logo_img', url);
 
         // Update UI locally
         const preview = document.getElementById('logoPreview');
         const previewImg = document.getElementById('logoPreviewImg');
         const deleteBtn = document.getElementById('deleteLogoBtn');
 
-        if (previewImg) previewImg.src = dataUrl;
+        if (previewImg) previewImg.src = url;
         if (preview) preview.style.display = 'block';
         if (deleteBtn) deleteBtn.style.display = 'block';
         const downloadBtn = document.getElementById('downloadLogoBtn');
         if (downloadBtn) downloadBtn.style.display = 'block';
 
         alert("Logo mis à jour !");
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+        alert("Erreur lors de l'upload du logo");
+        console.error(err);
+    }
 }
 
 async function downloadLogoImage() {
@@ -767,10 +788,18 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const maxId = projectsData.length > 0 ? Math.max(...projectsData.map(p => Number(p.id))) : 0;
                 const newId = maxId + 1;
-                const img1 = await readFileAsDataURL(document.getElementById('projectExtImg')?.files?.[0]) || 'assets/images/placeholder.jpg';
-                const sound1 = await readFileAsDataURL(document.getElementById('projectExtSound')?.files?.[0]) || '';
-                const img2 = await readFileAsDataURL(document.getElementById('projectIntImg')?.files?.[0]) || 'assets/images/placeholder.jpg';
-                const sound2 = await readFileAsDataURL(document.getElementById('projectIntSound')?.files?.[0]) || '';
+
+                // Handle uploads to Storage
+                const extImgFile = document.getElementById('projectExtImg')?.files?.[0];
+                const extSoundFile = document.getElementById('projectExtSound')?.files?.[0];
+                const intImgFile = document.getElementById('projectIntImg')?.files?.[0];
+                const intSoundFile = document.getElementById('projectIntSound')?.files?.[0];
+
+                const img1 = extImgFile ? await window.StorageDB.uploadFile(`projects/p${newId}_img1_${Date.now()}`, extImgFile) : 'assets/images/placeholder.jpg';
+                const sound1 = extSoundFile ? await window.StorageDB.uploadFile(`projects/p${newId}_sound1_${Date.now()}`, extSoundFile) : '';
+                const img2 = intImgFile ? await window.StorageDB.uploadFile(`projects/p${newId}_img2_${Date.now()}`, intImgFile) : 'assets/images/placeholder.jpg';
+                const sound2 = intSoundFile ? await window.StorageDB.uploadFile(`projects/p${newId}_sound2_${Date.now()}`, intSoundFile) : '';
+
                 projectsData.push({ id: newId, title: `Projeto #${newId}`, img1, sound1, img2, sound2 });
                 await window.StorageDB.set('hs4all_projects', projectsData);
                 renderProjects();
