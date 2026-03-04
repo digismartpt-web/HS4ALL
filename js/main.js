@@ -6,13 +6,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded - Version 70 (Optimized)');
 
-    // CRITICAL INITIALIZATION: Do these first!
+    // CRITICAL INITIALIZATION: PRIORITÉ ABSOLUE
     try {
+        initLogoImage(); // Logo First
+        initHeroPriority(); // Hero First
+
         initLocalization();
         initNavigation();
         initHeroAnimation();
         initSmoothScroll();
-        initLogoImage();
     } catch (e) {
         console.error('Critical initialization error:', e);
     }
@@ -75,6 +77,28 @@ async function initLogoImage() {
         }
     } catch (e) {
         console.error('Error initializing logo image:', e);
+    }
+}
+
+/**
+ * Hero Priority Initialization - Fetch and apply Hero image as early as possible
+ */
+async function initHeroPriority() {
+    try {
+        const visualsRaw = await window.StorageDB.get('hs4all_fixed_visuals');
+        if (visualsRaw) {
+            const visuals = Array.isArray(visualsRaw) ? visualsRaw : Object.values(visualsRaw);
+            const heroData = visuals.find(v => v.id === 'hero');
+            if (heroData && heroData.img) {
+                const heroImg = document.getElementById('heroImgExt');
+                if (heroImg) {
+                    heroImg.src = heroData.img;
+                    console.log('Hero image prioritized');
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Hero priority fetch failed, falling back to dynamic-content.js', e);
     }
 }
 

@@ -72,7 +72,9 @@ async function loadFixedVisuals() {
         try {
             switch (visual.id) {
                 case 'hero':
-                    updateImgAndSound('.hero-image', visual.img, '.hero .sound-trigger, .hero .image-sound-toggle', visual.sound);
+                    // Immediate update for Hero to avoid flicker
+                    const heroImg = document.getElementById('heroImgExt');
+                    if (heroImg) heroImg.src = visual.img;
                     break;
                 case 'philosophy':
                     updateImgAndSound('#philosophy .split-image img', visual.img, '#philosophy .sound-trigger, #philosophy .image-sound-toggle', visual.sound);
