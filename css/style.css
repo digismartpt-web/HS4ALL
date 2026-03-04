@@ -2451,6 +2451,10 @@ address {
         grid-template-columns: 1fr;
     }
 
+    .comparison-grid {
+        grid-template-columns: 1fr;
+    }
+
     /* Process */
     .process-steps {
         grid-template-columns: 1fr;
