@@ -351,9 +351,17 @@ function renderTexts() {
                 let translated = 0;
                 const totalToTranslate = changedKeys.length * langs.length;
 
+                const keysToSkip = ['contact.email', 'contact.phone', 'contact.address'];
                 for (const key of changedKeys) {
                     const ptText = ptTexts[key];
                     if (!ptText || !ptText.trim()) continue;
+
+                    if (keysToSkip.includes(key)) {
+                        for (const targetLang of langs) {
+                            updatedTexts[targetLang][key] = ptText;
+                        }
+                        continue;
+                    }
 
                     for (const targetLang of langs) {
                         try {
@@ -511,7 +519,7 @@ function renderTexts() {
             block.innerHTML = `
                 <div style="font-weight:600; margin-bottom:8px; color:#556; font-size:13px;">${label}</div>
                 <div style="font-size:10px; color:#99a; margin-bottom:6px; font-family:monospace;">Code: ${key}</div>
-                <textarea data-key="${key}" data-lang="pt"
+                <textarea class="text-input" data-key="${key}" data-lang="pt"
                     style="width:100%; min-height:55px; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit; font-size:13px; resize:vertical; box-sizing:border-box;">${ptSaved}</textarea>
             `;
             container.appendChild(block);
@@ -535,7 +543,7 @@ function renderTexts() {
             block.style.cssText = 'margin-bottom:12px; padding:14px 16px; border-radius:8px; background:#f9f9f9; border:1px solid #eee;';
             block.innerHTML = `
                 <div style="font-weight:600; margin-bottom:8px; color:#556; font-size:13px; font-family:monospace;">${key}</div>
-                <textarea data-key="${key}" data-lang="pt"
+                <textarea class="text-input" data-key="${key}" data-lang="pt"
                     style="width:100%; min-height:55px; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit; font-size:13px; resize:vertical; box-sizing:border-box;">${ptSaved}</textarea>
             `;
             container.appendChild(block);
